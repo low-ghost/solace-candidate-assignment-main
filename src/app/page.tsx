@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { AlertCircle, Loader, Users } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   PaginationControls,
   Table,
@@ -21,25 +22,38 @@ const headers = [
   'Phone Number',
 ];
 
+const useDebounce = <T extends {}>(value: T, delay: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
+};
+
+export const formatPhoneNumber = (phoneNumber?: number | string) =>
+  String(phoneNumber)?.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3');
+
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebounce(searchTerm, 400);
   const { page, setPage, limit, setLimit } = usePaginationControls(10);
   const { advocates, total, isLoading, error } = useAdvocates(
-    searchTerm,
+    debouncedSearch,
     page,
     limit,
   );
   const totalPages = Math.ceil(total / limit);
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPage(1); // Reset to first page on new search
+  const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setPage(1); // reset to first page on new search
     setSearchTerm(e.target.value);
-  };
+  }, []);
 
-  const onClick = () => {
+  const onReset = useCallback(() => {
     setSearchTerm('');
     setPage(1);
-  };
+  }, []);
 
   return (
     <>
@@ -65,20 +79,27 @@ export default function Home() {
               placeholder="Search advocates..."
               type="text"
             />
-            <Button onClick={onClick} className="ml-2 text-sm" type="button">
+            <Button onClick={onReset} className="ml-2 text-sm" type="button">
               Reset
             </Button>
           </div>
         </div>
+
         {isLoading ? (
-          <div className="text-center py-8 text-gray-500">Loading...</div>
+          <div className="flex flex-col items-center justify-center py-16 text-gray-500 dark:text-gray-400 animate-pulse">
+            <Loader className="w-8 h-8 mb-3 text-blue-400 animate-spin" />
+            <span>Loading advocates...</span>
+          </div>
         ) : error ? (
-          <div className="text-center py-8 text-red-600">
-            Error: {error.message}
+          <div className="flex flex-col items-center justify-center py-16 text-red-600 dark:text-red-400">
+            <AlertCircle className="w-8 h-8 mb-3" />
+            <span className="font-medium">Something went wrong</span>
+            <span className="text-sm mt-1">{error.message}</span>
           </div>
         ) : advocates.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No advocates found.
+          <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500">
+            <Users className="w-8 h-8 mb-3" />
+            <span>No advocates found.</span>
           </div>
         ) : (
           <>
@@ -106,7 +127,9 @@ export default function Home() {
                       </div>
                     </TableData>
                     <TableData>{advocate.yearsOfExperience}</TableData>
-                    <TableData>{advocate.phoneNumber}</TableData>
+                    <TableData>
+                      {formatPhoneNumber(advocate.phoneNumber)}
+                    </TableData>
                   </tr>
                 ))}
               </Table>
