@@ -1,13 +1,29 @@
 'use client';
 
 import { useState } from 'react';
+import {
+  PaginationControls,
+  Table,
+  TableData,
+  usePaginationControls,
+} from './components/table';
+import { Button } from './components/ui/Button';
+import { Input } from './components/ui/Input';
 import { useAdvocates } from './use-advocates';
+
+const headers = [
+  'First Name',
+  'Last Name',
+  'City',
+  'Degree',
+  'Specialties',
+  'Years of Experience',
+  'Phone Number',
+];
 
 export default function Home() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
-
+  const { page, setPage, limit, setLimit } = usePaginationControls(10);
   const { advocates, total, isLoading, error } = useAdvocates(
     searchTerm,
     page,
@@ -26,100 +42,86 @@ export default function Home() {
   };
 
   return (
-    <main style={{ margin: '24px' }}>
-      <h1>Solace Advocates</h1>
-      <br />
-      <br />
-      <div>
-        <p>Search</p>
-        <p>
-          Searching for: <span id="search-term">{searchTerm}</span>
-        </p>
-        <input
-          style={{ border: '1px solid black' }}
-          value={searchTerm}
-          onChange={onChange}
-        />
-        <button onClick={onClick}>Reset Search</button>
-      </div>
-      <br />
-      <br />
-      {isLoading ? (
-        <div>Loading...</div>
-      ) : error ? (
-        <div style={{ color: 'red' }}>Error: {error.message}</div>
-      ) : advocates.length === 0 ? (
-        <div>No advocates found.</div>
-      ) : (
-        <>
-          <table>
-            <thead>
-              <tr>
-                <th>First Name</th>
-                <th>Last Name</th>
-                <th>City</th>
-                <th>Degree</th>
-                <th>Specialties</th>
-                <th>Years of Experience</th>
-                <th>Phone Number</th>
-              </tr>
-            </thead>
-            <tbody>
-              {advocates.map((advocate: any) => (
-                <tr key={advocate.id}>
-                  <td>{advocate.firstName}</td>
-                  <td>{advocate.lastName}</td>
-                  <td>{advocate.city}</td>
-                  <td>{advocate.degree}</td>
-                  <td>
-                    {advocate.specialties.map((s: string, i: number) => (
-                      <div key={s + i}>{s}</div>
-                    ))}
-                  </td>
-                  <td>{advocate.yearsOfExperience}</td>
-                  <td>{advocate.phoneNumber}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div style={{ marginTop: '16px' }}>
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
-              Previous
-            </button>
-            <span style={{ margin: '0 8px' }}>
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages || totalPages === 0}
-            >
-              Next
-            </button>
-            <span style={{ marginLeft: '16px' }}>
-              Show
-              <select
-                value={limit}
-                onChange={(e) => {
-                  setPage(1);
-                  setLimit(Number(e.target.value));
-                }}
-                style={{ margin: '0 4px' }}
-              >
-                {[5, 10, 20, 50].map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
-                  </option>
-                ))}
-              </select>
-              per page
-            </span>
-            <span style={{ marginLeft: '16px' }}>Total: {total}</span>
+    <>
+      <header className="w-full flex items-center justify-between px-8 py-5 mb-8 bg-white/80 dark:bg-gray-900/80 shadow-lg rounded-b-2xl backdrop-blur-md">
+        <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+          Solace Advocates
+        </h1>
+      </header>
+      <main className="p-6 max-w-7xl mx-auto">
+        <div className="mb-6">
+          <label
+            htmlFor="search"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1"
+          >
+            Search
+          </label>
+          <div className="flex items-center gap-2 mb-1">
+            <Input
+              id="search"
+              className=""
+              value={searchTerm}
+              onChange={onChange}
+              placeholder="Search advocates..."
+              type="text"
+            />
+            <Button onClick={onClick} className="ml-2 text-sm" type="button">
+              Reset
+            </Button>
           </div>
-        </>
-      )}
-    </main>
+        </div>
+        {isLoading ? (
+          <div className="text-center py-8 text-gray-500">Loading...</div>
+        ) : error ? (
+          <div className="text-center py-8 text-red-600">
+            Error: {error.message}
+          </div>
+        ) : advocates.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No advocates found.
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto rounded-lg shadow">
+              <Table headers={headers}>
+                {advocates.map((advocate: any) => (
+                  <tr
+                    key={advocate.id}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    <TableData>{advocate.firstName}</TableData>
+                    <TableData>{advocate.lastName}</TableData>
+                    <TableData>{advocate.city}</TableData>
+                    <TableData>{advocate.degree}</TableData>
+                    <TableData>
+                      <div className="flex flex-wrap gap-1">
+                        {advocate.specialties.map((s: string, i: number) => (
+                          <span
+                            key={s + i}
+                            className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded dark:bg-blue-900 dark:text-blue-100"
+                          >
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </TableData>
+                    <TableData>{advocate.yearsOfExperience}</TableData>
+                    <TableData>{advocate.phoneNumber}</TableData>
+                  </tr>
+                ))}
+              </Table>
+            </div>
+            <PaginationControls
+              page={page}
+              setPage={setPage}
+              totalPages={totalPages}
+              limit={limit}
+              setLimit={setLimit}
+              total={total}
+            />
+          </>
+        )}
+      </main>
+    </>
   );
 }
